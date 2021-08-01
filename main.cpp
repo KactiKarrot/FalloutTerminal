@@ -85,8 +85,8 @@ void open_entry(int n) {
   switch(fileType) {
     case 0:
       //open_text
-      //clear_menu();
-      //fstream::ifstream openFile(entryName);
+      clear_menu();
+      fstream::ifstream openFile(entryName);
       break;
     case 1:
       //open_folder
