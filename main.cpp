@@ -1,27 +1,15 @@
-//for 31/08/21: learn how to make c++ headers and libraries so that I can transfer most of my functions to a library so Nick and I can create extension programs
+#include "fallout_terminal.hpp" //Header with all functions for the terminal
 
+//Note to self: use std::system(file.o); to run external extension software like floppy games
 
-//Required includes on linux, look for alternatives for windows
-//no longer required, have found cross-platform alternative (std::filesystem in c++17)
-//#include <sys/stat.h>
-//#include <sys/types.h>
-
-//Required includes
-#include <string>
-#include <iostream>
-#include <thread>
-#include <chrono>
-#include <ncurses.h>
-#include <filesystem>
-#include <vector>
-#include <fstream>
-
-namespace fs = std::filesystem;
-
+//Global definitions
 std::vector<std::string> fileList; //Global initiation of fileList[] vector
-std::vector<fs::path> filePathList; //Global initiation of fullFileList[] vector
+std::vector<std::filesystem::path> filePathList; //Global initiation of fullFileList[] vector
 int selectedEntryNum = 0; //Global initiation of selectedEntryNum int that stores which entry is currently selected
 int entryCount = 0; //Stores how many entries are on current page
+int currentLine = 0;
+int totalCols;
+int directoryLevel = 0;
 
 //Test if a string ends with a specified substring
 bool hasEnding(std::string const &fullString, std::string const &ending) {
@@ -39,62 +27,6 @@ std::string eraseSubstring(std::string fullString, std::string subString) {
     fullString.erase(pos, subString.length());
   }
   return fullString;
-}
-
-//Prints a string on char at a time with specified delay, using echochar() to do so
-void term_echo(std::string str, int delay) {
-  for(char c: str) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-    //std::cout << c << std::flush; //unneeded now, kept for future reference
-    echochar(c);
-  }
-}
-
-//Place a string in the middle of the sreen using term_echo()
-void center_print(int COLS, int currentLine, std::string str) {
-  int mid = COLS/2;
-  int offset = str.length()/2;
-  move(currentLine, mid-offset);
-  wrefresh(stdscr);
-  term_echo(str, 50);
-}
-
-//Clears the menu for editing
-void clear_menu() {
-  int currentLine = 6;
-  while (currentLine <= LINES-3) {
-    move(currentLine, 0);
-    wrefresh(stdscr);
-    clrtoeol();
-    wrefresh(stdscr);
-    currentLine++;
-  }
-}
-
-//Opens n entry from the list
-void open_entry(int n) {
-  int fileType; //specifies filetype of input file, 0 = text, 1 = folder, 2 = executable
-  std::string entryName = filePathList[n];
-  if (hasEnding(entryName, ".entry") == true) {
-    fileType = 0;
-  } else if (hasEnding(entryName, ".folder") == true) {
-    fileType = 1;
-  } else if (hasEnding(entryName, ".program") == true) {
-    fileType = 2;
-  }
-  switch(fileType) {
-    case 0:
-      //open_text
-      clear_menu();
-      fstream::ifstream openFile(entryName);
-      break;
-    case 1:
-      //open_folder
-      break;
-    case 2:
-      //open_executable
-      break;
-  }
 }
 
 //Selects entry n from the list
@@ -136,13 +68,15 @@ void nav_down() {
 }
 
 //Lists all files of the current directory of specified extensions into the menu
-void list_files() {
-  std::string currentPath = fs::current_path();
+void list_files(int selectedEntry = -1, int page = -1) {
+  std::string currentPath = std::filesystem::current_path();
   currentPath = currentPath + "/";
-  int currentLine = 6;
+  currentLine = 6;
   entryCount = 0;
-  for (const auto & entry : fs::directory_iterator(currentPath)) {
-    fs::path entryPath = entry.path();
+  filePathList.clear();
+  fileList.clear();
+  for (const auto & entry : std::filesystem::directory_iterator(currentPath)) {
+    std::filesystem::path entryPath = entry.path();
     std::string fullEntryName = entry.path();
     std::string entryName;
     entryName = eraseSubstring(fullEntryName, currentPath);
@@ -151,13 +85,76 @@ void list_files() {
       entryName = eraseSubstring(entryName, ".folder");
       move(currentLine, 0);
       wrefresh(stdscr);
-      term_echo("> ", 50);
-      term_echo(entryName, 50);
+      term_echo("> ", 50, COLS, 0);
+      term_echo(entryName, 50, COLS, 2);
       currentLine++;
       fileList.push_back(entryName);
       filePathList.push_back(entryPath);
       entryCount++;
     }
+  }
+  if (selectedEntry != -1) {
+    selectedEntryNum = selectedEntry;
+  }
+}
+
+//Opens n entry from the list
+void open_entry(int n) {
+  int fileType; //specifies filetype of input file, 0 = text, 1 = folder, 2 = executable
+  std::string entryName = filePathList[n];
+  char ch;
+  if (hasEnding(entryName, ".entry") == true) {
+    fileType = 0;
+  } else if (hasEnding(entryName, ".folder") == true) {
+    fileType = 1;
+  } else if (hasEnding(entryName, ".program") == true) {
+    fileType = 2;
+  }
+  std::string entryContent;
+  switch(fileType) {
+    case 0: {
+      //open text file
+      clear_menu();
+      move(LINES-1, 2);
+      wrefresh(stdscr);
+      addstr("Accessing...");
+      currentLine = 6;
+      std::ifstream openFile(entryName);
+      while (getline(openFile, entryContent)) { //This currently works, it prints the entry and waits to print a second page if required. It will make mistakes if a line that is too long is in the input file. This would done by comparing entryContent.length() to COLS, however this may not be needed as files created in my editor will not be able to keep going past the edge of the screen
+        move(currentLine, 0);
+        wrefresh(stdscr);
+        term_echo(entryContent, 50, COLS, 0);
+        currentLine++;
+        if (currentLine == LINES-2) {
+          ch = getch();
+          while (ch != 10 && ch != KEY_BACKSPACE && ch != 127) {
+            ch = getch();
+          }
+          clear_menu();
+          currentLine = 6;
+        }
+      }
+      //While enter has not been pressed
+      ch = getch();
+      while (ch != 10 && ch != KEY_BACKSPACE && ch != 127) {
+        ch = getch();
+      }
+      move(LINES-1, 1);
+      wrefresh(stdscr);
+      clrtoeol();
+      clear_menu();
+      list_files();
+      break;
+    }
+    case 1:
+      //open folder
+      std::filesystem::current_path(filePathList[n]);
+      clear_menu();
+      list_files(0);
+      break;
+    case 2:
+      //open executable file
+      break;
   }
 }
 
@@ -175,7 +172,8 @@ int main() {
   int x;
   //initialize ch variable required by getch() for input handling
   int ch;
-  //std::string rootDir = fs::current_path();
+  totalCols = COLS;
+  //std::string rootDir = std::filesystem::current_path();
 
   //tmp inits
   //This uses the mkdir command built into POSIX compliant operating systems, this means it does not work on windows, instead a solution in std::filesystem should be used
@@ -194,7 +192,7 @@ int main() {
   //draw menu
   move(4, 0);
   wrefresh(stdscr);
-  term_echo(title, 50);
+  term_echo(title, 50, COLS, 0);
   move(5, 0);
   wrefresh(stdscr);
   for (unsigned long i = 0; i != title.length(); i++) {
@@ -206,10 +204,10 @@ int main() {
   //draw command line
   move(LINES-1, 0);
   wrefresh(stdscr);
-  term_echo("> ", 50);
+  term_echo("> ", 50, COLS, 0);
 
   //Init user control
-  int mode = 0;
+  int mode = 1;
   int inputLength = 0;
   while(mode >=0) {
     //detects which is the current mode, cmd or nav
@@ -296,9 +294,22 @@ int main() {
             break;
           //Return key
           case 10:
+            //std::system("./ext.o")
             open_entry(selectedEntryNum);
-            endwin();
-            return 0;
+            //endwin();
+            //return 0;
+            break;
+          //Backspace key for Konsole
+          case 127:
+            std::filesystem::current_path(std::filesystem::current_path().parent_path());
+            clear_menu();
+            list_files();
+            break;
+          //Backspace key for TTY
+          case KEY_BACKSPACE:
+            std::filesystem::current_path(std::filesystem::current_path().parent_path());
+            clear_menu();
+            list_files();
             break;
           //Escape key
           case 27:
