@@ -1,4 +1,4 @@
-#include "fallout_terminal.hpp" //Header with all functions for the terminal
+#include "FalloutTerminalLib.hpp" //Header with all functions for the terminal
 
 //Note to self: use std::system(file.o); to run external extension software like floppy games
 
@@ -116,6 +116,7 @@ void open_entry(int n) {
       //open text file
       clear_menu();
       move(LINES-1, 2);
+      clrtoeol();
       wrefresh(stdscr);
       addstr("Accessing...");
       currentLine = 6;
