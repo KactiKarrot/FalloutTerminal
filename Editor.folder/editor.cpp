@@ -21,6 +21,15 @@
   mvchgat(y, x, 1, A_STANDOUT, 0, NULL);
 }*/
 
+
+
+
+void scroll_down() {
+}
+
+void scroll_up() {
+}
+
 void inputCh(int ch) {
   int y, x;
   getyx(stdscr, y, x);
@@ -28,19 +37,14 @@ void inputCh(int ch) {
   //moveCursor(y, x+1);
 }
 
-int main() {
-  initscr(); //initiate ncurses window
-  //required inits for ncurses
-  cbreak();
-  noecho();
-  keypad(stdscr, TRUE);
-  start_color();
-  init_pair(1, COLOR_GREEN, COLOR_BLACK);
-  attron(COLOR_PAIR(1));
+extern "C" int start() {
   int y, x; //initialize variables for getyx();
   int ch; //initialize ch variable required by getch() for input handling
   std::string entryContent;
-  std::string entryName = "textFile.entry";
+  std::string entryName = "textFile.entry";//"textFile.entry";
+  std::ofstream saveFile;
+  char myChar;
+  std::vector<std::string> entryContentVector;
 
   clear_menu();
   move(LINES-1, 0);
@@ -50,12 +54,15 @@ int main() {
   addstr(bottomText.c_str());
   int currentLine = 6;
   std::ifstream openFile(entryName);
+  int i = 0;
 
-  while (getline(openFile, entryContent)) { //This currently works, it prints the entry and waits to print a second page if required. It will make mistakes if a line that is too long is in the input file. This would done by comparing entryContent.length() to COLS, however this may not be needed as files created in my editor will not be able to keep going past the edge of the screen
+  while (getline(openFile, entryContent)) {
+    //insert entryContent into vector[i]
     move(currentLine, 0);
     wrefresh(stdscr);
-    term_echo(entryContent, 50, COLS, 0);
+    term_echo(entryContent, 50, COLS, 0, true);
     currentLine++;
+    i++;
     if (currentLine == LINES-2) {
       break;
     }
@@ -69,6 +76,7 @@ int main() {
   //gets int key code of pressed key
   while (loop == true) {
     ch = getch();
+    getyx(stdscr, y, x);
     switch(ch) {
       //Return key
       case 10:
@@ -87,7 +95,6 @@ int main() {
         break;
       //Backspace key for Konsole
       case 127:
-        getyx(stdscr, y, x);
         if (x > 0) {
           move(y, x-1);
           delch();
@@ -96,7 +103,6 @@ int main() {
         break;
       //Backspace key for TTY
       case KEY_BACKSPACE:
-        getyx(stdscr, y, x);
         if (x > 0) {
           move(y, x-1);
           delch();
@@ -105,16 +111,27 @@ int main() {
         break;
       //Disable left arrow key
       case KEY_LEFT:
-        
+        if (x > 0) {
+          move(y, x - 1);
+        }
         break;
       //Disable right arrow key
       case KEY_RIGHT:
+        if (x < COLS) {
+          move(y, x + 1);
+        }
         break;
       //Disable up arrow key
       case KEY_UP:
+        if (y > 6) {
+          move(y - 1, x);
+        }
         break;
       //Disable down arrow key
       case KEY_DOWN:
+        if (y < (LINES - 2)) {
+          move(y + 1, x);
+        }
         break;
       //Disable delete key
       case KEY_DC:
@@ -122,10 +139,27 @@ int main() {
       //Switch to Nav mode
       case KEY_IC:
         break;
+      //Handle CTRL+S
+      case 19:
+        saveFile.open(entryName, std::ofstream::out | std::ofstream::trunc);
+        char myChar;
+        //Add for loop that saves chars on screen into file
+        getyx(stdscr, y, x);
+        move(6, 0);
+        for (int i = 0; i < LINES - 7; i++) {
+          for (int j = 0; j < COLS; j++) {
+            if (i > 5 && i < (LINES - 1)) {
+              myChar = (mvinch(i, j) & A_CHARTEXT);
+              saveFile << myChar;
+            }
+          }
+        }
+        move(y, x);
+        break;
       //Handle all other inputs
       default:
         inputCh(ch);
-        //break;
+        break;
     }
     wrefresh(stdscr);
   }

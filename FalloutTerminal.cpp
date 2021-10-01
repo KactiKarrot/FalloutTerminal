@@ -1,8 +1,7 @@
 #include "FalloutTerminalLib.hpp" //Header with all functions for the terminal
 
-//Note to self: use std::system(file.o); to run external extension software like floppy games
-
 //Global definitions
+std::string title = "KactiKarrot Log Terminal"; //Temporary title for this terminal, subject to change
 std::vector<std::string> fileList; //Global initiation of fileList[] vector
 std::vector<std::filesystem::path> filePathList; //Global initiation of fullFileList[] vector
 int selectedEntryNum = 0; //Global initiation of selectedEntryNum int that stores which entry is currently selected
@@ -10,6 +9,7 @@ int entryCount = 0; //Stores how many entries are on current page
 int currentLine = 0;
 int totalCols;
 int directoryLevel = 0;
+char *str;
 
 //Test if a string ends with a specified substring
 bool hasEnding(std::string const &fullString, std::string const &ending) {
@@ -27,6 +27,15 @@ std::string eraseSubstring(std::string fullString, std::string subString) {
     fullString.erase(pos, subString.length());
   }
   return fullString;
+}
+
+//Open shared object library and run function to start addon program
+void run_so(std::string fileName) {
+  void* handle = dlopen(fileName.c_str(), RTLD_LAZY);
+  typedef void (*test_t)();
+  test_t start = (test_t) dlsym(handle, "start");
+
+  start();
 }
 
 //Selects entry n from the list
@@ -80,9 +89,10 @@ void list_files(int selectedEntry = -1, int page = -1) {
     std::string fullEntryName = entry.path();
     std::string entryName;
     entryName = eraseSubstring(fullEntryName, currentPath);
-    if (hasEnding(entryName, ".entry") == true || hasEnding(entryName, ".folder") == true) {
+    if (hasEnding(entryName, ".entry") == true || hasEnding(entryName, ".folder") == true || hasEnding(entryName, ".program") == true) {
       entryName = eraseSubstring(entryName, ".entry");
       entryName = eraseSubstring(entryName, ".folder");
+      entryName = eraseSubstring(entryName, ".program");
       move(currentLine, 0);
       wrefresh(stdscr);
       term_echo("> ", 50, COLS, 0);
@@ -96,6 +106,31 @@ void list_files(int selectedEntry = -1, int page = -1) {
   if (selectedEntry != -1) {
     selectedEntryNum = selectedEntry;
   }
+}
+
+//Prints the static info and command line with no delay. Also runs list_files();
+void print_static() {
+  //Write general static info to top of screen
+  center_print(COLS, 0, "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM", 0);
+  center_print(COLS, 1, "COPYRIGHT 2075-2077 ROBCO INDUSTRIES", 0);
+  center_print(COLS, 2, "-Server 56-", 0);
+
+  //draw menu
+  move(4, 0);
+  wrefresh(stdscr);
+  term_echo(title, 0, COLS, 0);
+  move(5, 0);
+  wrefresh(stdscr);
+  for (unsigned long i = 0; i != title.length(); i++) {
+    term_echo("_", 0);
+  }
+  list_files();
+  select_entry(selectedEntryNum);
+
+  //draw command line
+  move(LINES-1, 0);
+  wrefresh(stdscr);
+  term_echo("> ", 0, COLS, 0);
 }
 
 //Opens n entry from the list
@@ -124,7 +159,7 @@ void open_entry(int n) {
       while (getline(openFile, entryContent)) { //This currently works, it prints the entry and waits to print a second page if required. It will make mistakes if a line that is too long is in the input file. This would done by comparing entryContent.length() to COLS, however this may not be needed as files created in my editor will not be able to keep going past the edge of the screen
         move(currentLine, 0);
         wrefresh(stdscr);
-        term_echo(entryContent, 50, COLS, 0);
+        term_echo(entryContent, 50, COLS, 0, true);
         currentLine++;
         if (currentLine == LINES-2) {
           ch = getch();
@@ -155,12 +190,16 @@ void open_entry(int n) {
       break;
     case 2:
       //open executable file
+      run_so(entryName);
+      clear();
+      print_static();
       break;
   }
 }
 
 int main() {
   initscr(); //initiate ncurses window
+  raw(); //Required for Ctrl + S use
   //required inits for ncurses
   cbreak();
   noecho();
@@ -179,7 +218,6 @@ int main() {
   //tmp inits
   //This uses the mkdir command built into POSIX compliant operating systems, this means it does not work on windows, instead a solution in std::filesystem should be used
   //mkdir("./This is a folder", 0777);
-  std::string title = "KactiKarrot Log Terminal"; //Temporary title for this terminal, subject to change
 
   //Write general static info to top of screen
   center_print(COLS, 0, "ROBCO INDUSTRIES UNIFIED OPERATING SYSTEM");
@@ -219,8 +257,15 @@ int main() {
         switch(ch) {
           //Return key
           case 10:
-            endwin();
-            return 0;
+            //endwin();
+            //return 0;
+            ///mvinchstr(COLS, 2, str);
+            move(COLS, 0);
+            instr(str);
+            addstr(str);
+            //endwin();
+            //std::cout << str << std::endl;
+            //return 0;
             break;
           //Escape key
           case 27:

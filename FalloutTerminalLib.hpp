@@ -8,23 +8,28 @@
 #include <vector>
 #include <fstream>
 #include <cstdlib>
+#include <dlfcn.h>
 
 //Prints a string on char at a time with specified delay, using echochar() to do so
-void term_echo(std::string str, int delay, int COLS = 0, int currentCol = -1) {
-  for(char c: str) {
-    std::this_thread::sleep_for(std::chrono::milliseconds(delay));
-    //std::cout << c << std::flush; //unneeded now, kept for future reference
-    echochar(c);
+void term_echo(std::string str, int delay, int COLS = 0, int currentCol = -1, bool instSpace = false) {
+  for(char c : str) {
+    if (c == ' ' && instSpace == true) {
+      echochar(c);
+    } else {
+      std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+      //std::cout << c << std::flush; //unneeded now, kept for future reference
+      echochar(c);
+    }
   }
 }
 
 //Place a string in the middle of the sreen using term_echo()
-void center_print(int COLS, int currentLine, std::string str) {
+void center_print(int COLS, int currentLine, std::string str, int delay = 50) {
   int mid = COLS/2;
   int offset = str.length()/2;
   move(currentLine, mid-offset);
   wrefresh(stdscr);
-  term_echo(str, 50);
+  term_echo(str, delay);
 }
 
 //Clears the menu for editing
