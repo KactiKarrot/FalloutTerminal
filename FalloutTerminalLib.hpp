@@ -9,6 +9,9 @@
 #include <fstream>
 #include <cstdlib>
 #include <dlfcn.h>
+#include <algorithm>
+#include <cctype>
+#include <locale>
 
 //Prints a string on char at a time with specified delay, using echochar() to do so
 void term_echo(std::string str, int delay, int COLS = 0, int currentCol = -1, bool instSpace = false) {
@@ -42,4 +45,11 @@ void clear_menu() {
     wrefresh(stdscr);
     currentLine++;
   }
+}
+
+// trim from end (in place) from: https://stackoverflow.com/questions/216823/how-to-trim-a-stdstring
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
 }

@@ -2,28 +2,6 @@
 
 #include "../FalloutTerminalLib.hpp"
 
-/*void moveCursor(int y = -1, int x = -1, std::string direction = "none") {
-  if (y == -1 && direction == "none") {
-    return;
-  }
-  int prevY, prevX;
-  getyx(stdscr, prevY, prevX);
-  if (direction == "right") {
-    y = prevY;
-    x = prevX + 1;
-  } else if (direction == "left") {
-    y = prevY;
-    x = prevX - 1;
-  } else {
-
-  }
-  chgat(1, A_NORMAL, 0, NULL);
-  mvchgat(y, x, 1, A_STANDOUT, 0, NULL);
-}*/
-
-
-
-
 void scroll_down() {
 }
 
@@ -58,9 +36,11 @@ extern "C" int start() {
 
   while (getline(openFile, entryContent)) {
     //insert entryContent into vector[i]
+    entryContentVector.push_back(entryContent);
     move(currentLine, 0);
     wrefresh(stdscr);
-    term_echo(entryContent, 50, COLS, 0, true);
+    //term_echo(entryContent, 50, COLS, 0, true);
+    term_echo(entryContentVector.at(i), 50, COLS, 0, true);
     currentLine++;
     i++;
     if (currentLine == LINES-2) {
@@ -147,12 +127,16 @@ extern "C" int start() {
         getyx(stdscr, y, x);
         move(6, 0);
         for (int i = 0; i < LINES - 7; i++) {
+          
           for (int j = 0; j < COLS; j++) {
             if (i > 5 && i < (LINES - 1)) {
               myChar = (mvinch(i, j) & A_CHARTEXT);
               saveFile << myChar;
+              //saveFile << entryContentVector.at(i);
             }
           }
+          //saveFile << '\n';
+
         }
         move(y, x);
         break;
@@ -168,41 +152,3 @@ extern "C" int start() {
   endwin();
   return 0;
 }
-
-
-
-
-
-/*
-      clear_menu();
-      move(LINES-1, 2);
-      wrefresh(stdscr);
-      addstr("Accessing...");
-      currentLine = 6;
-      std::ifstream openFile(entryName);
-      while (getline(openFile, entryContent)) { //This currently works, it prints the entry and waits to print a second page if required. It will make mistakes if a line that is too long is in the input file. This would done by comparing entryContent.length() to COLS, however this may not be needed as files created in my editor will not be able to keep going past the edge of the screen
-        move(currentLine, 0);
-        wrefresh(stdscr);
-        term_echo(entryContent, 50, COLS, 0);
-        currentLine++;
-        if (currentLine == LINES-2) {
-          ch = getch();
-          while (ch != 10 && ch != KEY_BACKSPACE && ch != 127) {
-            ch = getch();
-          }
-          clear_menu();
-          currentLine = 6;
-        }
-      }
-      //While enter has not been pressed
-      ch = getch();
-      while (ch != 10 && ch != KEY_BACKSPACE && ch != 127) {
-        ch = getch();
-      }
-      move(LINES-1, 1);
-      wrefresh(stdscr);
-      clrtoeol();
-      clear_menu();
-      list_files();
-      break;
-*/
