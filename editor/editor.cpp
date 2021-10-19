@@ -1,5 +1,3 @@
-//This program currently reads a predetermined file. I need to add support for insertion of text instead of overwriting. Line scrolling needs to be added
-
 #include "editor.hpp"
 
 extern "C" int start() {
@@ -54,7 +52,6 @@ extern "C" int start() {
     getyx(stdscr, y, x);
     switch(ch) {
       case 10:                                                                                      // Return key
-        return 0;
         break;
       case 27:                                                                                      // Escape key
         return 0;

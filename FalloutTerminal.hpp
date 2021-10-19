@@ -92,7 +92,7 @@ void list_files(int selectedEntry = -1, int page = -1, int printRate = 50) {    
     fs::path entryPath = entry.path();
     std::string fullEntryName = entry.path();
     entryName = eraseSubstring(fullEntryName, currentPath);
-    if (hasEnding(entryName, ".entry") == true || hasEnding(entryName, ".folder") == true || hasEnding(entryName, ".program") == true) {
+    if (hasEnding(entryName, ".entry") || hasEnding(entryName, ".folder") || hasEnding(entryName, ".program")) {
       entryName = eraseSubstring(entryName, ".entry");
       entryName = eraseSubstring(entryName, ".folder");
       entryName = eraseSubstring(entryName, ".program");
@@ -136,11 +136,11 @@ void open_entry(int n) {                                                        
   int fileType;                                                                                     // Specifies filetype of input file, 0 = text, 1 = folder, 2 = executable
   entryName = filePathList[n];
   char ch;
-  if (hasEnding(entryName, ".entry") == true) {
+  if (hasEnding(entryName, ".entry")) {
     fileType = 0;
-  } else if (hasEnding(entryName, ".folder") == true) {
+  } else if (hasEnding(entryName, ".folder")) {
     fileType = 1;
-  } else if (hasEnding(entryName, ".program") == true) {
+  } else if (hasEnding(entryName, ".program")) {
     fileType = 2;
   }
   std::string entryContent;

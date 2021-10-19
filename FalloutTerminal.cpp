@@ -115,7 +115,7 @@ int main() {
             }
             break;
           case KEY_DC:                                                                              // Delete file or folder
-            if (hasEnding(filePathList[selectedEntryNum], ".folder") == true) {
+            if (hasEnding(filePathList[selectedEntryNum], ".folder")) {
               run_command("rmdir " + filePathList[selectedEntryNum].string());
             } else {
               run_command("rm " + filePathList[selectedEntryNum].string());
