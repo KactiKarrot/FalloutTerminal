@@ -197,8 +197,8 @@ void run_command(std::string str) {                                             
   }
 
   if (str.substr(0, 6) == "rmdir ") {                                                               // Delete a folder
-    fs::remove_all(str.substr(7) + ".folder");
-    fs::remove(str.substr(7) + ".folder");
+    fs::remove_all(str.substr(6) + ".folder");
+    fs::remove(str.substr(6) + ".folder");
   }
 
   if (str.substr(0, 3) == "rm ") {                                                                  // Delete a file
