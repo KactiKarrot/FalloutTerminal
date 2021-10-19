@@ -1,3 +1,5 @@
+// Current error is that the entryToOpen variable is not available to other files
+
 //Required includes
 #include <string>
 #include <iostream>
@@ -12,6 +14,7 @@
 #include <algorithm>
 #include <cctype>
 #include <locale>
+#include <sstream>
 
 //Prints a string on char at a time with specified delay, using echochar() to do so
 void term_echo(std::string str, int delay, int COLS = 0, int currentCol = -1, bool instSpace = false) {
@@ -52,4 +55,10 @@ static inline void rtrim(std::string &s) {
     s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
         return !std::isspace(ch);
     }).base(), s.end());
+}
+
+//Copies run rtrim but not in place
+std::string crtrim(std::string str) {
+  rtrim(str);
+  return str;
 }
