@@ -29,8 +29,7 @@ void term_echo(std::string str, int delay, int COLS = 0, int currentCol = -1, bo
   }
 }
 
-//Place a string in the middle of the sreen using term_echo()
-void center_print(int COLS, int currentLine, std::string str, int delay = 50) {
+void center_print(int COLS, int currentLine, std::string str, int delay = 50) {                     // Place a string in the middle of the sreen using term_echo()
   int mid = COLS/2;
   int offset = str.length()/2;
   move(currentLine, mid-offset);

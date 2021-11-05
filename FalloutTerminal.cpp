@@ -13,9 +13,20 @@ int main() {
   init_pair(1, COLOR_GREEN, COLOR_BLACK);
   attron(COLOR_PAIR(1));
                                                                                                     // End of inits
+
   int y, x;                                                                                         // Declare variables for getyx();
   int ch;                                                                                           // Declare ch int used for getch to determine presed key
   std::string cmdInput = "";                                                                        // Defines empty string for commmand line input
+  std::string line;                                                                                 // Temporarily stores current line of config file
+  configLocation = std::getenv("HOME");
+  configLocation += "/.foterm";
+
+  configFile.open(configLocation, std::ifstream::in);
+  while (getline(configFile, line)) {
+    configVector.push_back(line);
+  }
+  configFile.close();
+  title = configVector[0].substr(6);
 
   print_static();                                                                                   // Write general static info to top of screen
 
@@ -98,7 +109,12 @@ int main() {
             wrefresh(stdscr);
             break;
           case 10:                                                                                  // Return key
-            open_entry(selectedEntryNum);
+            if (entryCount > 0) {
+              open_entry(selectedEntryNum);
+            }
+            if (entryCount == 0) {
+              clear_menu();
+            }
             break;
           case 127:                                                                                 // Backspace key for Konsole
             if (fs::current_path() != rootPath) {
@@ -118,8 +134,9 @@ int main() {
             if (hasEnding(filePathList[selectedEntryNum], ".folder")) {
               run_command("rmdir " + filePathList[selectedEntryNum].string().substr(0, filePathList[selectedEntryNum].string().length() - 7));
             } else {
-              run_command("rm " + filePathList[selectedEntryNum].string());
+              run_command("rm " + filePathList[selectedEntryNum].string().substr(0, filePathList[selectedEntryNum].string().length() - 6));
             }
+            nav_up();
             break;
           case 27:                                                                                  // Escape key
             endwin();

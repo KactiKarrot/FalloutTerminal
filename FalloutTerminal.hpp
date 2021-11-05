@@ -3,9 +3,10 @@
 namespace fs = std::filesystem;
 
                                                                                                     // Global declarations
-std::string title = "KactiKarrot Log Terminal";                                                     // Temporary title for this terminal; will be taken from file
+std::string title = "Example title";                                                                // Temporary title for this terminal; will be taken from file
 std::vector<std::string> fileList;                                                                  // Global declaration of fileList[] vector
 std::vector<fs::path> filePathList;                                                                 // Global declaration of filePathList[] vector
+std::vector<std::string> configVector;                                                              // Global declaration of config vector
 int selectedEntryNum = 0;                                                                           // Global initiation of selectedEntryNum int that stores which entry is currently selected
 int entryCount = 0;                                                                                 // Stores how many entries are on current page
 int currentLine = 0;
@@ -15,6 +16,8 @@ std::string entryName;                                                          
 std::string entryToOpen;                                                                            // Global declaration of entry to open for editor
 std::ofstream paramFile;                                                                            // Used for passing params to .programs
 std::string rootPath = fs::current_path();                                                          // Used to know location of built in programs
+std::fstream configFile;                                                                            // Used to read and write the the config file
+std::string configLocation;                                                                         // Location of config file
 
 bool hasEnding(std::string const &fullString, std::string const &ending) {                          // Test if a string ends with a specified substring
   if (fullString.length() >= ending.length()) {
@@ -48,25 +51,32 @@ void run_so(std::string fileName, std::string params = "", bool editor = false) 
 }
 
 void select_entry(int n) {                                                                          //  Selects entry n from the list
-  move(6+n, 2);
-  wrefresh(stdscr);
-  clrtoeol();
-  attron(A_STANDOUT);
-  addstr(fileList[n].c_str());
-  attroff(A_STANDOUT);
-  wrefresh(stdscr);
+  if (entryCount > 0) {
+    move(6+n, 2);
+    wrefresh(stdscr);
+    clrtoeol();
+    attron(A_STANDOUT);
+    addstr(fileList[n].c_str());
+    attroff(A_STANDOUT);
+    wrefresh(stdscr);
+  } else if (entryCount == 0) {
+    move(6, 0);
+    wrefresh(stdscr);
+  }
 }
 
 void deselect_entry(int n) {                                                                        // Deselects entry n from the list
   move(6+n, 2);
   wrefresh(stdscr);
   clrtoeol();
-  addstr(fileList[n].c_str());
+  if (entryCount > 0) {
+    addstr(fileList[n].c_str());
+  }
   wrefresh(stdscr);
 }
 
 void nav_up() {                                                                                     //  Moves down one selection
-  if (selectedEntryNum > 0) {
+  if (selectedEntryNum > 0 && entryCount > 0) {
     deselect_entry(selectedEntryNum);
     selectedEntryNum--;
     select_entry(selectedEntryNum);
@@ -74,7 +84,7 @@ void nav_up() {                                                                 
 }
 
 void nav_down() {                                                                                   // Moves down one selection
-  if (selectedEntryNum < entryCount-1) {
+  if (selectedEntryNum < entryCount-1 && entryCount > 0) {
     deselect_entry(selectedEntryNum);
     selectedEntryNum++;
     select_entry(selectedEntryNum);
@@ -92,7 +102,7 @@ void list_files(int selectedEntry = -1, int page = -1, int printRate = 50) {    
     fs::path entryPath = entry.path();
     std::string fullEntryName = entry.path();
     entryName = eraseSubstring(fullEntryName, currentPath);
-    if (hasEnding(entryName, ".entry") || hasEnding(entryName, ".folder") || hasEnding(entryName, ".program")) {
+    if (hasEnding(entryName, ".entry") == true || hasEnding(entryName, ".folder") == true || hasEnding(entryName, ".program") == true) {
       entryName = eraseSubstring(entryName, ".entry");
       entryName = eraseSubstring(entryName, ".folder");
       entryName = eraseSubstring(entryName, ".program");
@@ -108,6 +118,11 @@ void list_files(int selectedEntry = -1, int page = -1, int printRate = 50) {    
   }
   if (selectedEntry != -1) {
     selectedEntryNum = selectedEntry;
+  }
+  if (entryCount == 0) {
+    move(6, 0);
+    clrtoeol();
+    wrefresh(stdscr);
   }
 }
 
@@ -136,11 +151,11 @@ void open_entry(int n) {                                                        
   int fileType;                                                                                     // Specifies filetype of input file, 0 = text, 1 = folder, 2 = executable
   entryName = filePathList[n];
   char ch;
-  if (hasEnding(entryName, ".entry")) {
+  if (hasEnding(entryName, ".entry") == true) {
     fileType = 0;
-  } else if (hasEnding(entryName, ".folder")) {
+  } else if (hasEnding(entryName, ".folder") == true) {
     fileType = 1;
-  } else if (hasEnding(entryName, ".program")) {
+  } else if (hasEnding(entryName, ".program") == true) {
     fileType = 2;
   }
   std::string entryContent;
@@ -181,6 +196,8 @@ void open_entry(int n) {                                                        
     case 1:                                                                                         // Open folder
       fs::current_path(filePathList[n]);
       clear_menu();
+      move(6, 0);
+      wrefresh(stdscr);
       list_files(0);
       break;
     case 2:                                                                                         // Open executable file                                                                           // Close the file to save changes
@@ -207,6 +224,15 @@ void run_command(std::string str) {                                             
 
   if (str.substr(0, 5) == "edit ") {                                                                // Edit a file
     run_so(rootPath + "/editor/editor.so", str.substr(5) + ".entry", true);
+  }
+
+  if (str.substr(0, 8) == "chtitle ") {
+    configVector[0] = "title=" + str.substr(8);
+    configFile.open(configLocation, std::ofstream::out | std::ofstream::trunc);
+    for (int i = 0; i < configVector.size(); i++) {
+      configFile << configVector[i] << std::endl;                                           // Save element into file
+    }
+    configFile.close();
   }
 
   clear_menu();
